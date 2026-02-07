@@ -21,12 +21,12 @@
       [%init events=(map @ud event)]
   ==
 ::
-+$  state-0
++$  cal-state
   $:  events=(map @ud event)
       next-id=@ud
   ==
 ::
-+$  versioned-state
-  $%  [%0 state-0]
++$  versioned-cal-state
+  $%  [%0 cal-state]
   ==
 --

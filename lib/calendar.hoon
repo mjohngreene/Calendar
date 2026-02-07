@@ -6,41 +6,38 @@
   [id=id title=title start=start end=end description=description location=location]
 ::
 ++  add-event
-  |=  [=state-0 title=@t start=@da end=@da description=(unit @t) location=(unit @t)]
-  ^-  [event state-0]
-  =/  id  next-id.state-0
+  |=  [=cal-state title=@t start=@da end=@da description=(unit @t) location=(unit @t)]
+  =/  id  next-id.cal-state
   =/  =event  (make-event id title start end description location)
   :-  event
-  state-0(events (~(put by events.state-0) id event), next-id +(next-id.state-0))
+  cal-state(events (~(put by events.cal-state) id event), next-id +(next-id.cal-state))
 ::
 ++  edit-event
-  |=  [=state-0 id=@ud title=@t start=@da end=@da description=(unit @t) location=(unit @t)]
-  ^-  [event state-0]
-  ?>  (~(has by events.state-0) id)
+  |=  [=cal-state id=@ud title=@t start=@da end=@da description=(unit @t) location=(unit @t)]
+  ?>  (~(has by events.cal-state) id)
   =/  =event  (make-event id title start end description location)
   :-  event
-  state-0(events (~(put by events.state-0) id event))
+  cal-state(events (~(put by events.cal-state) id event))
 ::
 ++  delete-event
-  |=  [=state-0 id=@ud]
-  ^-  state-0
-  ?>  (~(has by events.state-0) id)
-  state-0(events (~(del by events.state-0) id))
+  |=  [=cal-state id=@ud]
+  ?>  (~(has by events.cal-state) id)
+  cal-state(events (~(del by events.cal-state) id))
 ::
 ++  get-event
-  |=  [=state-0 id=@ud]
+  |=  [=cal-state id=@ud]
   ^-  (unit event)
-  (~(get by events.state-0) id)
+  (~(get by events.cal-state) id)
 ::
 ++  list-events
-  |=  =state-0
+  |=  =cal-state
   ^-  (list event)
-  %+  turn  ~(tap by events.state-0)
+  %+  turn  ~(tap by events.cal-state)
   |=([=@ud =event] event)
 ::
 ++  events-in-range
-  |=  [=state-0 range-start=@da range-end=@da]
+  |=  [=cal-state range-start=@da range-end=@da]
   ^-  (list event)
-  %+  skim  (list-events state-0)
+  %+  skim  (list-events cal-state)
   |=(=event &((lth start.event range-end) (gth end.event range-start)))
 --

@@ -3,7 +3,7 @@
 |%
 +$  card  card:agent:gall
 --
-=|  state=versioned-state
+=|  state=versioned-cal-state
 =*  st  +.state
 %-  agent:dbug
 ^-  agent:gall
@@ -24,7 +24,7 @@
   |=  old-vase=vase
   ^-  (quip card _this)
   ~&  >  '%calendar reloaded'
-  =/  old  !<(versioned-state old-vase)
+  =/  old  !<(versioned-cal-state old-vase)
   ?-  -.old
     %0  `this(state old)
   ==
@@ -38,19 +38,19 @@
     =/  act  !<(action vase)
     ?-    -.act
         %add-event
-      =/  [=event new-state=state-0]
+      =/  res
         (add-event st title.act start.act end.act description.act location.act)
-      :_  this(state [%0 new-state])
-      :~  [%give %fact ~[/updates] %calendar-update !>([%event-added event])]
+      :_  this(state [%0 +.res])
+      :~  [%give %fact ~[/updates] %calendar-update !>([%event-added -.res])]
       ==
         %edit-event
-      =/  [=event new-state=state-0]
+      =/  res
         (edit-event st id.act title.act start.act end.act description.act location.act)
-      :_  this(state [%0 new-state])
-      :~  [%give %fact ~[/updates] %calendar-update !>([%event-edited event])]
+      :_  this(state [%0 +.res])
+      :~  [%give %fact ~[/updates] %calendar-update !>([%event-edited -.res])]
       ==
         %delete-event
-      =/  new-state=state-0  (delete-event st id.act)
+      =/  new-state  (delete-event st id.act)
       :_  this(state [%0 new-state])
       :~  [%give %fact ~[/updates] %calendar-update !>([%event-deleted id.act])]
       ==
