@@ -1,0 +1,10 @@
+:~
+  title+'Calendar'
+  info+'Manage your events and schedule'
+  color+0x39.8fd2
+  base+'calendar'
+  site+/apps/calendar
+  version+[0 1 0]
+  website+''
+  license+'MIT'
+==
