@@ -1,0 +1,11 @@
+# Urbit binary
+urbit
+
+# Urbit ship data
+zod/
+
+# Reference repo (submodule or clone)
+running-urbit/
+
+# Dev scratch
+CalendarDev/
