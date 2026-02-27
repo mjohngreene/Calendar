@@ -107,7 +107,7 @@
         =/  res  (add-event st title start end desc loc)
         =/  s-date  (yore start)
         =/  redir  (crip "{base-url}?m={(ud-to-tape:calendar-ui m.s-date)}&y={(ud-to-tape:calendar-ui y.s-date)}")
-        =/  http-cards  (give-simple-payload:app:server eyre-id (redirect:gen:server redir))
+        =/  http-cards  (give-simple-payload:app:server eyre-id (redirect-303:hc redir))
         =/  update-card  [%give %fact ~[/updates] %calendar-update !>([%event-added -.res])]
         :_  this(state [%0 +.res])
         (snoc http-cards update-card)
@@ -129,7 +129,7 @@
         =/  res  (edit-event st u.id title start end desc loc)
         =/  s-date  (yore start)
         =/  redir  (crip "{base-url}?m={(ud-to-tape:calendar-ui m.s-date)}&y={(ud-to-tape:calendar-ui y.s-date)}")
-        =/  http-cards  (give-simple-payload:app:server eyre-id (redirect:gen:server redir))
+        =/  http-cards  (give-simple-payload:app:server eyre-id (redirect-303:hc redir))
         =/  update-card  [%give %fact ~[/updates] %calendar-update !>([%event-edited -.res])]
         :_  this(state [%0 +.res])
         (snoc http-cards update-card)
@@ -143,7 +143,7 @@
           :_(this (give-simple-payload:app:server eyre-id not-found:gen:server))
         =/  new-state  (delete-event st u.id)
         =/  redir  (crip base-url)
-        =/  http-cards  (give-simple-payload:app:server eyre-id (redirect:gen:server redir))
+        =/  http-cards  (give-simple-payload:app:server eyre-id (redirect-303:hc redir))
         =/  update-card  [%give %fact ~[/updates] %calendar-update !>([%event-deleted u.id])]
         :_  this(state [%0 new-state])
         (snoc http-cards update-card)
@@ -231,6 +231,11 @@
     %-  manx-response:gen:server
     (render-event-detail:calendar-ui u.ev base-url)
   ==
+::
+++  redirect-303
+  |=  url=@t
+  ^-  simple-payload:http
+  [[303 ~[['location' url]]] ~]
 ::
 ++  parse-form-body
   |=  body=@t
