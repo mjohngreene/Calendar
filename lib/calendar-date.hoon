@@ -110,6 +110,14 @@
   =/  names=(list @t)
     ~['Sunday' 'Monday' 'Tuesday' 'Wednesday' 'Thursday' 'Friday' 'Saturday']
   (snag d names)
+::  +weekday-name-short: 0=Sun..6=Sat -> 3-letter cord
+::
+++  weekday-name-short
+  |=  d=@ud
+  ^-  @t
+  =/  names=(list @t)
+    ~['Sun' 'Mon' 'Tue' 'Wed' 'Thu' 'Fri' 'Sat']
+  (snag d names)
 ::  +week-start-da: midnight Sunday of the week containing d
 ::
 ++  week-start-da
