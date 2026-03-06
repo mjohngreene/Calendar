@@ -85,6 +85,21 @@
         .scroll-btn { display: flex; align-items: center; justify-content: center; padding: 6px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; cursor: pointer; user-select: none; color: #9ca3af; font-size: 16px; font-weight: 700; }
         .scroll-btn:last-child { border-bottom: none; border-top: 1px solid #e5e7eb; }
         .scroll-btn:hover { background: #e5e7eb; color: #374151; }
+        .week-grid { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        .week-header { display: flex; border-bottom: 2px solid #e5e7eb; background: #fff; }
+        .week-lbl-spc { flex-shrink: 0; width: 36px; border-right: 1px solid #e5e7eb; }
+        .week-day-hdr { flex: 1; text-align: center; padding: 6px 2px; font-size: 11px; font-weight: 600; color: #6b7280; border-right: 1px solid #e5e7eb; }
+        .week-day-hdr:last-child { border-right: none; }
+        .week-day-hdr.today { color: #2563eb; background: #eff6ff; }
+        .week-row { display: flex; border-bottom: 1px solid #e5e7eb; min-height: 48px; }
+        .week-row:last-child { border-bottom: none; }
+        .week-row.now-row { background: #fffbeb; }
+        .week-lbl { flex-shrink: 0; width: 36px; padding: 3px 4px 0 2px; font-size: 10px; color: #9ca3af; text-align: right; border-right: 1px solid #e5e7eb; }
+        .week-cell { flex: 1; border-right: 1px solid #e5e7eb; padding: 1px 2px; display: flex; flex-direction: column; gap: 1px; min-height: 48px; }
+        .week-cell:last-child { border-right: none; }
+        .week-cell.today { background: #eff6ff; }
+        .week-event { display: block; font-size: 10px; padding: 1px 3px; border-radius: 2px; background: #dbeafe; color: #1e40af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+        .week-event:hover { background: #bfdbfe; text-decoration: none; }
         '''
       ==
       ;script
@@ -291,40 +306,64 @@
       ==
     ==
   $(hour +(hour), rows [row rows])
-::  +render-week-schedule: agenda view for a week (Sun–Sat) grouped by day
+::  +render-week-schedule: 7-column time-grid week view (Sun–Sat)
 ::
 ++  render-week-schedule
   |=  [anchor=@da events=(map @ud event) base-url=tape now=@da]
   ^-  manx
-  =/  ws    (week-start-da:calendar-date anchor)
-  =/  we    (week-end-da:calendar-date anchor)
+  =/  ws       (week-start-da:calendar-date anchor)
+  =/  we       (week-end-da:calendar-date anchor)
   =/  prev-ws  (sub ws (mul 7 ~d1))
   =/  next-ws  (add ws (mul 7 ~d1))
   =/  prev-dt  (yore prev-ws)
   =/  next-dt  (yore next-ws)
   =/  prev-url  "{base-url}/schedule/week?date={(ud-to-tape y.prev-dt)}-{(z-pad m.prev-dt)}-{(z-pad d.t.prev-dt)}"
   =/  next-url  "{base-url}/schedule/week?date={(ud-to-tape y.next-dt)}-{(z-pad m.next-dt)}-{(z-pad d.t.next-dt)}"
-  ::  all events that overlap this week
+  ::  all events overlapping this week
   =/  week-events=(list event)
-    %+  sort
-      %+  skim  (turn ~(tap by events) |=([=@ud =event] event))
-      |=(=event &((lth start.event we) (gth end.event ws)))
-    |=([a=event b=event] (lth start.a start.b))
-  ::  build title: "Month D–D, Y" or "Month D – Month D, Y" if crosses month boundary
-  =/  ws-dt   (yore ws)
-  =/  sat-da  (sub we ~d1)
-  =/  sat-dt  (yore sat-da)
+    %+  skim  (turn ~(tap by events) |=([=@ud =event] event))
+    |=(=event &((lth start.event we) (gth end.event ws)))
+  ::  pre-compute per-day [day-da sorted-events] for each of 7 days
+  =/  day-pairs=(list [@da (list event)])
+    =|  i=@ud
+    |-  ^-  (list [@da (list event)])
+    ?:  =(i 7)  ~
+    =/  day-da   (add ws (mul i ~d1))
+    =/  day-end  (add day-da ~d1)
+    =/  devs=(list event)
+      %+  sort
+        %+  skim  week-events
+        |=(=event &((lth start.event day-end) (gth end.event day-da)))
+      |=([a=event b=event] (lth start.a start.b))
+    [[day-da devs] $(i +(i))]
+  ::  build title
+  =/  ws-dt     (yore ws)
+  =/  sat-da    (sub we ~d1)
+  =/  sat-dt    (yore sat-da)
   =/  sun-mname  (trip (month-name:calendar-date m.ws-dt))
   =/  sat-mname  (trip (month-name:calendar-date m.sat-dt))
   =/  title-tape=tape
     ?:  =(m.ws-dt m.sat-dt)
       "{sun-mname} {(ud-to-tape d.t.ws-dt)}–{(ud-to-tape d.t.sat-dt)}, {(ud-to-tape y.ws-dt)}"
     "{sun-mname} {(ud-to-tape d.t.ws-dt)} – {sat-mname} {(ud-to-tape d.t.sat-dt)}, {(ud-to-tape y.sat-dt)}"
-  =/  now-dt   (yore now)
-  =/  day-idx=@ud  0
-  =/  groups=(list manx)  ~
+  ::  today and current hour
+  =/  now-dt    (yore now)
+  =/  now-hour  h.t.now-dt
+  ::  column headers (Sun Mon … Sat with date number)
+  =/  day-hdrs=(list manx)
+    %+  turn  day-pairs
+    |=  [day-da=@da devs=(list event)]
+    =/  dt       (yore day-da)
+    =/  dow      (day-of-week:calendar-date day-da)
+    =/  wname    (trip (weekday-name-short:calendar-date dow))
+    =/  is-today=?  &(=(y.dt y.now-dt) =(m.dt m.now-dt) =(d.t.dt d.t.now-dt))
+    =/  cls=tape  ?:(is-today "week-day-hdr today" "week-day-hdr")
+    ;div(class cls): {wname} {(ud-to-tape d.t.dt)}
+  ::  build 24 hour rows
+  =/  hour=@ud  0
+  =/  rows=(list manx)  ~
   |-
-  ?:  =(day-idx 7)
+  ?:  =(hour 24)
     %+  page-wrapper  "Week: {title-tape}"
     ;div
       ;+  (view-toggle "week" base-url y.ws-dt m.ws-dt d.t.ws-dt)
@@ -333,45 +372,50 @@
         ;span.title: {title-tape}
         ;a(href next-url): Next Week >
       ==
-      ;+  ?:  =(~ week-events)
-            ;div.card
-              ;div.empty-state: No events this week
-            ==
-          ;div
-            ;*  (flop groups)
+      ;div.week-grid
+        ;div.scroll-btn(id "scroll-up"): ▲
+        ;div.day-scroll(id "day-scroll")
+          ;div.week-header
+            ;div.week-lbl-spc;
+            ;*  day-hdrs
           ==
+          ;*  (flop rows)
+        ==
+        ;div.scroll-btn(id "scroll-down"): ▼
+      ==
     ==
-  ::  compute this day's bounds
-  =/  this-da   (add ws (mul day-idx ~d1))
-  =/  next-da   (add this-da ~d1)
-  =/  this-dt   (yore this-da)
-  =/  wday      (trip (weekday-name:calendar-date day-idx))
-  =/  mname     (trip (month-name:calendar-date m.this-dt))
-  =/  is-today=?
-    &(=(y.this-dt y.now-dt) =(m.this-dt m.now-dt) =(d.t.this-dt d.t.now-dt))
-  ::  events overlapping this day
-  =/  day-events=(list event)
-    %+  skim  week-events
-    |=(=event &((lth start.event next-da) (gth end.event this-da)))
-  ::  header: highlight today in blue
-  =/  hdr=manx
-    ?:  is-today
-      ;div.schedule-group-header(style "color:#2563eb;font-weight:700;"): {wday}, {mname} {(ud-to-tape d.t.this-dt)}
-    ;div.schedule-group-header: {wday}, {mname} {(ud-to-tape d.t.this-dt)}
-  ::  items: events or a "no events" placeholder, header prepended
-  =/  no-ev=manx
-    ;div(style "padding:6px 0 4px 0;color:#9ca3af;font-size:13px;"): No events
-  =/  ev-items=(list manx)
-    ?:  =(~ day-events)
-      ~[no-ev]
-    %+  turn  day-events
-    |=(=event (render-schedule-item event base-url))
-  =/  day-items=(list manx)  [hdr ev-items]
-  =/  group=manx
-    ;div.schedule-group
-      ;*  day-items
+  ::  am/pm label
+  =/  ampm=tape
+    ?:  =(hour 0)      "12a"
+    ?:  (lth hour 12)  "{(ud-to-tape hour)}a"
+    ?:  =(hour 12)     "12p"
+    "{(ud-to-tape (sub hour 12))}p"
+  =/  row-cls=tape  ?:(=(hour now-hour) "week-row now-row" "week-row")
+  ::  7 cells for this hour, one per day
+  =/  cells=(list manx)
+    %+  turn  day-pairs
+    |=  [day-da=@da devs=(list event)]
+    =/  dt      (yore day-da)
+    =/  h-start  (year [[& y.dt] m.dt d.t.dt hour 0 0 ~])
+    =/  h-end    (year [[& y.dt] m.dt d.t.dt hour 59 59 ~])
+    =/  is-today=?  &(=(y.dt y.now-dt) =(m.dt m.now-dt) =(d.t.dt d.t.now-dt))
+    =/  h-events=(list event)
+      %+  skim  devs
+      |=(=event &((lth start.event h-end) (gth end.event h-start)))
+    =/  pills=(list manx)
+      %+  turn  h-events
+      |=  =event
+      ;a.week-event(href "{base-url}/event/{(ud-to-tape id.event)}"): {(trip title.event)}
+    =/  cls=tape  ?:(is-today "week-cell today" "week-cell")
+    ;div(class cls)
+      ;*  pills
     ==
-  $(day-idx +(day-idx), groups [group groups])
+  =/  row=manx
+    ;div(class row-cls)
+      ;div.week-lbl: {ampm}
+      ;*  cells
+    ==
+  $(hour +(hour), rows [row rows])
 ::  +render-month-schedule: agenda view for a month grouped by day
 ::
 ++  render-month-schedule
