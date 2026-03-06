@@ -237,10 +237,29 @@
   ::
       [%add ~]
     =/  cur  (yore now.bowl)
-    =/  y=@ud  (fall (bind (find-arg args 'y') |=(v=@t (rash v dem))) y.cur)
-    =/  m=@ud  (fall (bind (find-arg args 'm') |=(v=@t (rash v dem))) m.cur)
+    ::  parse ?date=YYYY-MM-DD or fall back to ?y=Y&m=M
+    =/  date-str  (find-arg args 'date')
+    =/  [y=@ud m=@ud d=@ud]
+      ?~  date-str
+        =/  fy=@ud  (fall (bind (find-arg args 'y') |=(v=@t (rash v dem))) y.cur)
+        =/  fm=@ud  (fall (bind (find-arg args 'm') |=(v=@t (rash v dem))) m.cur)
+        [fy fm 1]
+      =/  dp  (split-cord u.date-str '-')
+      =/  py=@ud  ?~(dp y.cur (fall (rush i.dp dem) y.cur))
+      =/  pm=@ud  ?~(dp m.cur ?~(t.dp m.cur (fall (rush i.t.dp dem) m.cur)))
+      =/  pd=@ud  ?~(dp 1 ?~(t.dp 1 ?~(t.t.dp 1 (fall (rush i.t.t.dp dem) 1))))
+      [py pm pd]
+    ::  parse ?start-time=HH:MM and ?end-time=HH:MM
+    =/  st-str  (fall (find-arg args 'start-time') '09:00')
+    =/  et-str  (fall (find-arg args 'end-time') '10:00')
+    =/  st-parts  (split-cord st-str ':')
+    =/  et-parts  (split-cord et-str ':')
+    =/  sh=@ud  ?~(st-parts 9 (fall (rush i.st-parts dem) 9))
+    =/  sm=@ud  ?~(st-parts 0 ?~(t.st-parts 0 (fall (rush i.t.st-parts dem) 0)))
+    =/  eh=@ud  ?~(et-parts 10 (fall (rush i.et-parts dem) 10))
+    =/  em=@ud  ?~(et-parts 0 ?~(t.et-parts 0 (fall (rush i.t.et-parts dem) 0)))
     %-  manx-response:gen:server
-    (render-add-form:calendar-ui y m base-url)
+    (render-add-form:calendar-ui y m d sh sm eh em base-url)
   ::
       [%edit @ ~]
     =/  id  (rush i.t.site dem)

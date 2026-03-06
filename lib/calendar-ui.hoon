@@ -82,6 +82,8 @@
         .quick-add input::placeholder { color: #d1d5db; }
         .quick-add input:focus { background: #f0f9ff; border-radius: 3px; }
         .quick-add button { display: none; }
+        .slot-add { display: block; flex: 1; min-height: 16px; color: transparent; font-size: 11px; text-align: center; line-height: 16px; border-radius: 2px; }
+        .slot-add:hover { background: #eff6ff; color: #93c5fd; text-decoration: none; cursor: pointer; }
         .scroll-btn { display: flex; align-items: center; justify-content: center; padding: 6px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; cursor: pointer; user-select: none; color: #9ca3af; font-size: 16px; font-weight: 700; }
         .scroll-btn:last-child { border-bottom: none; border-top: 1px solid #e5e7eb; }
         .scroll-btn:hover { background: #e5e7eb; color: #374151; }
@@ -270,38 +272,18 @@
     ;a.hour-event(href "{base-url}/event/{(ud-to-tape id.event)}"): {(trip title.event)}
   ::  row class: highlight current hour
   =/  row-cls=tape  ?:(=(hour now-hour) "hour-row hour-now" "hour-row")
-  ::  quick-add form times: top half = :00-:30, bottom half = :30-:00
   =/  next-hour=@ud  ?:((lth hour 23) +(hour) 23)
-  =/  ret-from=tape  "0"
   =/  row=manx
     ;div(class row-cls)
       ;div.hour-label: {ampm}
       ;div.hour-content
         ;div.hour-half
           ;*  h1-pills
-          ;form.quick-add(method "POST", action "{base-url}/add-day")
-            ;input(type "hidden", name "start-date", value date-str);
-            ;input(type "hidden", name "start-time", value "{(z-pad hour)}:00");
-            ;input(type "hidden", name "end-date", value date-str);
-            ;input(type "hidden", name "end-time", value "{(z-pad hour)}:30");
-            ;input(type "hidden", name "return-date", value date-str);
-            ;input(type "hidden", name "return-from", value ret-from);
-            ;input(type "text", name "title", placeholder "+", autocomplete "off");
-            ;button(type "submit"): +
-          ==
+          ;a.slot-add(href "{base-url}/add?date={date-str}&start-time={(z-pad hour)}:00&end-time={(z-pad hour)}:30"): +
         ==
         ;div.hour-half
           ;*  h2-pills
-          ;form.quick-add(method "POST", action "{base-url}/add-day")
-            ;input(type "hidden", name "start-date", value date-str);
-            ;input(type "hidden", name "start-time", value "{(z-pad hour)}:30");
-            ;input(type "hidden", name "end-date", value date-str);
-            ;input(type "hidden", name "end-time", value "{(z-pad next-hour)}:00");
-            ;input(type "hidden", name "return-date", value date-str);
-            ;input(type "hidden", name "return-from", value ret-from);
-            ;input(type "text", name "title", placeholder "+", autocomplete "off");
-            ;button(type "submit"): +
-          ==
+          ;a.slot-add(href "{base-url}/add?date={date-str}&start-time={(z-pad hour)}:30&end-time={(z-pad next-hour)}:00"): +
         ==
       ==
     ==
@@ -414,15 +396,7 @@
     =/  cls=tape  ?:(is-today "week-cell today" "week-cell")
     ;div(class cls)
       ;*  pills
-      ;form.quick-add(method "POST", action "{base-url}/add-week")
-        ;input(type "hidden", name "start-date", value date-str);
-        ;input(type "hidden", name "start-time", value "{(z-pad hour)}:00");
-        ;input(type "hidden", name "end-date", value date-str);
-        ;input(type "hidden", name "end-time", value end-time);
-        ;input(type "hidden", name "return-date", value ws-date-str);
-        ;input(type "text", name "title", placeholder "+", autocomplete "off");
-        ;button(type "submit"): +
-      ==
+      ;a.slot-add(href "{base-url}/add?date={date-str}&start-time={(z-pad hour)}:00&end-time={(z-pad next-hour)}:00"): +
     ==
   =/  row=manx
     ;div(class row-cls)
@@ -677,9 +651,11 @@
 ::  +render-add-form: render add event form
 ::
 ++  render-add-form
-  |=  [pre-y=@ud pre-m=@ud base-url=tape]
+  |=  [pre-y=@ud pre-m=@ud pre-d=@ud pre-sh=@ud pre-sm=@ud pre-eh=@ud pre-em=@ud base-url=tape]
   ^-  manx
-  =/  date-default  "{(ud-to-tape pre-y)}-{(z-pad pre-m)}-01"
+  =/  date-default   "{(ud-to-tape pre-y)}-{(z-pad pre-m)}-{(z-pad pre-d)}"
+  =/  start-default  "{(z-pad pre-sh)}:{(z-pad pre-sm)}"
+  =/  end-default    "{(z-pad pre-eh)}:{(z-pad pre-em)}"
   %+  page-wrapper  "Add Event"
   ;div
     ;div.nav
@@ -699,7 +675,7 @@
         ==
         ;div.field
           ;label: Start Time
-          ;input(type "time", name "start-time", value "09:00");
+          ;input(type "time", name "start-time", value start-default);
         ==
         ;div.field
           ;label: End Date
@@ -707,7 +683,7 @@
         ==
         ;div.field
           ;label: End Time
-          ;input(type "time", name "end-time", value "10:00");
+          ;input(type "time", name "end-time", value end-default);
         ==
         ;div.field
           ;label: Description
