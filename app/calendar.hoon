@@ -125,6 +125,19 @@
         =/  update-card  [%give %fact ~[/updates] %calendar-update !>([%event-added -.res])]
         :_  this(state [%0 +.res])
         (snoc http-cards update-card)
+      ::  POST /add-week - quick add from week view, redirects back to week
+      ::
+          [%add-week ~]
+        =/  title  (fall (find-arg:hc body-args 'title') '')
+        =/  start  (parse-date-time:hc body-args 'start-date' 'start-time')
+        =/  end  (parse-date-time:hc body-args 'end-date' 'end-time')
+        =/  ret-date  (fall (find-arg:hc body-args 'return-date') '')
+        =/  res  (add-event st title start end ~ ~)
+        =/  redir  (crip "{base-url}/schedule/week?date={(trip ret-date)}")
+        =/  http-cards  (give-simple-payload:app:server eyre-id (redirect-303:hc redir))
+        =/  update-card  [%give %fact ~[/updates] %calendar-update !>([%event-added -.res])]
+        :_  this(state [%0 +.res])
+        (snoc http-cards update-card)
       ::  POST /edit/<id>
       ::
           [%edit @ ~]

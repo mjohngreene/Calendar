@@ -359,6 +359,8 @@
     =/  is-today=?  &(=(y.dt y.now-dt) =(m.dt m.now-dt) =(d.t.dt d.t.now-dt))
     =/  cls=tape  ?:(is-today "week-day-hdr today" "week-day-hdr")
     ;div(class cls): {wname} {(ud-to-tape d.t.dt)}
+  ::  week start as date string for redirect-back in quick-add
+  =/  ws-date-str=tape  "{(ud-to-tape y.ws-dt)}-{(z-pad m.ws-dt)}-{(z-pad d.t.ws-dt)}"
   ::  build 24 hour rows
   =/  hour=@ud  0
   =/  rows=(list manx)  ~
@@ -402,13 +404,25 @@
     =/  h-events=(list event)
       %+  skim  devs
       |=(=event &((lth start.event h-end) (gth end.event h-start)))
+    =/  date-str=tape  "{(ud-to-tape y.dt)}-{(z-pad m.dt)}-{(z-pad d.t.dt)}"
+    =/  next-hour=@ud  ?:((lth hour 23) +(hour) 23)
+    =/  end-time=tape  ?:((lth hour 23) "{(z-pad next-hour)}:00" "23:59")
     =/  pills=(list manx)
       %+  turn  h-events
       |=  =event
-      ;a.week-event(href "{base-url}/event/{(ud-to-tape id.event)}"): {(trip title.event)}
+      ;a.week-event(href "{base-url}/edit/{(ud-to-tape id.event)}"): {(trip title.event)}
     =/  cls=tape  ?:(is-today "week-cell today" "week-cell")
     ;div(class cls)
       ;*  pills
+      ;form.quick-add(method "POST", action "{base-url}/add-week")
+        ;input(type "hidden", name "start-date", value date-str);
+        ;input(type "hidden", name "start-time", value "{(z-pad hour)}:00");
+        ;input(type "hidden", name "end-date", value date-str);
+        ;input(type "hidden", name "end-time", value end-time);
+        ;input(type "hidden", name "return-date", value ws-date-str);
+        ;input(type "text", name "title", placeholder "+", autocomplete "off");
+        ;button(type "submit"): +
+      ==
     ==
   =/  row=manx
     ;div(class row-cls)
