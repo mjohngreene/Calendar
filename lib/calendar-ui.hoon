@@ -52,12 +52,433 @@
         .detail-row { margin-bottom: 12px; }
         .detail-row .label { font-weight: 600; font-size: 13px; color: #6b7280; text-transform: uppercase; margin-bottom: 2px; }
         .detail-row .value { font-size: 15px; }
+        .view-toggle { display: flex; gap: 4px; padding: 4px; background: #f3f4f6; border-radius: 8px; margin-bottom: 20px; }
+        .view-toggle a { flex: 1; text-align: center; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; color: #6b7280; }
+        .view-toggle a:hover { background: #e5e7eb; text-decoration: none; color: #374151; }
+        .view-toggle a.active { background: #fff; color: #2563eb; box-shadow: 0 1px 2px rgba(0,0,0,0.1); font-weight: 600; }
+        .schedule-group { margin-bottom: 24px; }
+        .schedule-group-header { font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 8px; }
+        .schedule-item { display: flex; gap: 16px; padding: 12px 16px; background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); margin-bottom: 8px; align-items: flex-start; transition: box-shadow 0.15s; }
+        .schedule-item:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .schedule-time { flex-shrink: 0; width: 100px; font-size: 13px; font-weight: 500; color: #6b7280; padding-top: 2px; }
+        .schedule-details { flex: 1; }
+        .schedule-details .ev-title { font-size: 15px; font-weight: 600; color: #1e40af; }
+        .schedule-details .ev-title:hover { text-decoration: underline; }
+        .schedule-details .ev-meta { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+        .empty-state { text-align: center; padding: 40px 20px; color: #9ca3af; font-size: 15px; }
+        .day-grid { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        .hour-row { display: flex; border-bottom: 1px solid #e5e7eb; min-height: 64px; }
+        .hour-row:last-child { border-bottom: none; }
+        .hour-label { flex-shrink: 0; width: 36px; padding: 2px 4px 2px 2px; font-size: 11px; font-weight: 500; color: #9ca3af; text-align: right; border-right: 1px solid #e5e7eb; }
+        .hour-content { flex: 3; display: flex; flex-direction: column; }
+        .hour-half { flex: 1; padding: 1px 4px; min-height: 32px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2px; border-bottom: 1px dashed #f3f4f6; }
+        .hour-half:last-child { border-bottom: none; }
+        .hour-event { display: inline-block; font-size: 10px; padding: 2px 4px; border-radius: 3px; background: #dbeafe; color: #1e40af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; max-width: 50%; }
+        .hour-event:hover { background: #bfdbfe; text-decoration: none; }
+        .hour-event .he-time { font-weight: 400; color: #3b82f6; font-size: 9px; }
+        .hour-now { background: #fffbeb; }
+        .quick-add { display: flex; flex: 1; min-width: 0; }
+        .quick-add input { flex: 1; border: none; outline: none; background: transparent; font-size: 11px; color: #374151; padding: 1px 4px; min-width: 0; }
+        .quick-add input::placeholder { color: #d1d5db; }
+        .quick-add input:focus { background: #f0f9ff; border-radius: 3px; }
+        .quick-add button { display: none; }
+        .scroll-btn { display: flex; align-items: center; justify-content: center; padding: 6px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; cursor: pointer; user-select: none; color: #9ca3af; font-size: 16px; font-weight: 700; }
+        .scroll-btn:last-child { border-bottom: none; border-top: 1px solid #e5e7eb; }
+        .scroll-btn:hover { background: #e5e7eb; color: #374151; }
+        '''
+      ==
+      ;script
+        ;+  ;/  %-  trip
+        '''
+        document.addEventListener('DOMContentLoaded', function() {
+          var sc = document.getElementById('day-scroll');
+          var up = document.getElementById('scroll-up');
+          var dn = document.getElementById('scroll-down');
+          if (!sc || !up || !dn) return;
+          var tid = null;
+          var speed = 3;
+          function startScroll(dir) {
+            stopScroll();
+            tid = setInterval(function() { sc.scrollTop += dir * speed; }, 16);
+          }
+          function stopScroll() { if (tid) { clearInterval(tid); tid = null; } }
+          up.addEventListener('mousedown', function(e) { e.preventDefault(); startScroll(-1); });
+          dn.addEventListener('mousedown', function(e) { e.preventDefault(); startScroll(1); });
+          up.addEventListener('mouseup', stopScroll);
+          dn.addEventListener('mouseup', stopScroll);
+          up.addEventListener('mouseleave', stopScroll);
+          dn.addEventListener('mouseleave', stopScroll);
+          up.addEventListener('touchstart', function(e) { e.preventDefault(); startScroll(-1); });
+          dn.addEventListener('touchstart', function(e) { e.preventDefault(); startScroll(1); });
+          up.addEventListener('touchend', stopScroll);
+          dn.addEventListener('touchend', stopScroll);
+          var cur = document.querySelector('.hour-now');
+          if (cur) { sc.scrollTop = cur.offsetTop - sc.offsetTop; }
+        });
         '''
       ==
     ==
     ;body
       ;+  content
     ==
+  ==
+::  +view-toggle: render the view toggle bar
+::
+++  view-toggle
+  |=  [active=tape base-url=tape y=@ud m=@ud d=@ud]
+  ^-  manx
+  =/  day-cls=tape    ?:(=(active "day") "active" "")
+  =/  week-cls=tape   ?:(=(active "week") "active" "")
+  =/  month-cls=tape  ?:(=(active "month") "active" "")
+  =/  year-cls=tape   ?:(=(active "year") "active" "")
+  =/  day-url=tape    "{base-url}/schedule/day?date={(ud-to-tape y)}-{(z-pad m)}-{(z-pad d)}"
+  =/  week-url=tape   "{base-url}/schedule/week?date={(ud-to-tape y)}-{(z-pad m)}-{(z-pad d)}"
+  =/  mon-url=tape    "{base-url}?m={(ud-to-tape m)}&y={(ud-to-tape y)}"
+  =/  yr-url=tape     "{base-url}/schedule/year?y={(ud-to-tape y)}"
+  ;div.view-toggle
+    ;a(href day-url, class day-cls): Day
+    ;a(href week-url, class week-cls): Week
+    ;a(href mon-url, class month-cls): Month
+    ;a(href yr-url, class year-cls): Year
+  ==
+::  +format-time: format @da as "HH:MM" tape
+::
+++  format-time
+  |=  d=@da
+  ^-  tape
+  =/  dt  (yore d)
+  "{(z-pad h.t.dt)}:{(z-pad m.t.dt)}"
+::  +format-date-short: format @da as "Mon DD" tape
+::
+++  format-date-short
+  |=  d=@da
+  ^-  tape
+  =/  dt  (yore d)
+  "{(trip (month-name-short:calendar-date m.dt))} {(ud-to-tape d.t.dt)}"
+::  +render-schedule-item: render a single event in schedule/agenda style
+::
+++  render-schedule-item
+  |=  [=event base-url=tape]
+  ^-  manx
+  =/  time-str  (format-time start.event)
+  =/  end-str  (format-time end.event)
+  =/  loc-str=tape
+    ?~  location.event  ""
+    " - {(trip u.location.event)}"
+  ;div.schedule-item
+    ;div.schedule-time: {time-str} - {end-str}
+    ;div.schedule-details
+      ;a.ev-title(href "{base-url}/event/{(ud-to-tape id.event)}"): {(trip title.event)}
+      ;+  ?~  description.event
+            ?:  =(loc-str "")
+              ;span;
+            ;div.ev-meta: {loc-str}
+          ?:  =(loc-str "")
+            ;div.ev-meta: {(trip u.description.event)}
+          ;div.ev-meta: {(trip u.description.event)}{loc-str}
+    ==
+  ==
+::  +render-day-schedule: agenda view for a single day
+::
+++  render-day-schedule
+  |=  [y=@ud m=@ud d=@ud from-param=@ud events=(map @ud event) base-url=tape now=@da]
+  ^-  manx
+  =/  day-da  (year [[& y] m d 0 0 0 ~])
+  =/  day-end  (year [[& y] m d 23 59 59 ~])
+  =/  day-events=(list event)
+    %+  sort
+      %+  skim  (turn ~(tap by events) |=([=@ud =event] event))
+      |=(=event &((lth start.event day-end) (gth end.event day-da)))
+    |=([a=event b=event] (lth start.a start.b))
+  ::  prev/next day
+  =/  prev-da  (sub day-da ~d1)
+  =/  prev-dt  (yore prev-da)
+  =/  next-da  (add day-da ~d1)
+  =/  next-dt  (yore next-da)
+  =/  dow  (day-of-week:calendar-date day-da)
+  =/  wday  (trip (weekday-name:calendar-date dow))
+  =/  mname  (trip (month-name:calendar-date m))
+  =/  prev-url  "{base-url}/schedule/day?date={(ud-to-tape y.prev-dt)}-{(z-pad m.prev-dt)}-{(z-pad d.t.prev-dt)}"
+  =/  next-url  "{base-url}/schedule/day?date={(ud-to-tape y.next-dt)}-{(z-pad m.next-dt)}-{(z-pad d.t.next-dt)}"
+  ::  get current hour for highlighting and default start
+  =/  now-dt  (yore now)
+  =/  is-today=?  &(=(y y.now-dt) =(m m.now-dt) =(d d.t.now-dt))
+  =/  now-hour=@ud  ?.(is-today 99 h.t.now-dt)
+  =/  date-str=tape  "{(ud-to-tape y)}-{(z-pad m)}-{(z-pad d)}"
+  ::  build 6 hour rows
+  =/  hour=@ud  0
+  =/  rows=(list manx)  ~
+  |-
+  ?:  =(hour 24)
+    %+  page-wrapper  "{wday}, {mname} {(ud-to-tape d)}, {(ud-to-tape y)}"
+    ;div
+      ;+  (view-toggle "day" base-url y m d)
+      ;div.nav
+        ;a(href prev-url): < Prev
+        ;span.title: {wday}, {mname} {(ud-to-tape d)}, {(ud-to-tape y)}
+        ;a(href next-url): Next >
+      ==
+      ;div.day-grid
+        ;div.scroll-btn(id "scroll-up"): ▲
+        ;div.day-scroll(id "day-scroll")
+          ;*  (flop rows)
+        ==
+        ;div.scroll-btn(id "scroll-down"): ▼
+      ==
+    ==
+  ::  format hour label
+  =/  ampm=tape
+    ?:  =(hour 0)   "12 AM"
+    ?:  (lth hour 12)  "{(ud-to-tape hour)} AM"
+    ?:  =(hour 12)  "12 PM"
+    "{(ud-to-tape (sub hour 12))} PM"
+  ::  find events in first half (:00-:29)
+  =/  h1-start  (year [[& y] m d hour 0 0 ~])
+  =/  h1-end    (year [[& y] m d hour 29 59 ~])
+  =/  h1-events=(list event)
+    %+  skim  day-events
+    |=(=event &((lth start.event h1-end) (gth end.event h1-start)))
+  ::  find events in second half (:30-:59)
+  =/  h2-start  (year [[& y] m d hour 30 0 ~])
+  =/  h2-end    (year [[& y] m d hour 59 59 ~])
+  =/  h2-events=(list event)
+    %+  skim  day-events
+    |=(=event &((lth start.event h2-end) (gth end.event h2-start)))
+  ::  build pills for each half
+  =/  h1-pills=(list manx)
+    %+  turn  h1-events
+    |=  =event
+    ;a.hour-event(href "{base-url}/event/{(ud-to-tape id.event)}"): {(trip title.event)}
+  =/  h2-pills=(list manx)
+    %+  turn  h2-events
+    |=  =event
+    ;a.hour-event(href "{base-url}/event/{(ud-to-tape id.event)}"): {(trip title.event)}
+  ::  row class: highlight current hour
+  =/  row-cls=tape  ?:(=(hour now-hour) "hour-row hour-now" "hour-row")
+  ::  quick-add form times: top half = :00-:30, bottom half = :30-:00
+  =/  next-hour=@ud  ?:((lth hour 23) +(hour) 23)
+  =/  ret-from=tape  "0"
+  =/  row=manx
+    ;div(class row-cls)
+      ;div.hour-label: {ampm}
+      ;div.hour-content
+        ;div.hour-half
+          ;*  h1-pills
+          ;form.quick-add(method "POST", action "{base-url}/add-day")
+            ;input(type "hidden", name "start-date", value date-str);
+            ;input(type "hidden", name "start-time", value "{(z-pad hour)}:00");
+            ;input(type "hidden", name "end-date", value date-str);
+            ;input(type "hidden", name "end-time", value "{(z-pad hour)}:30");
+            ;input(type "hidden", name "return-date", value date-str);
+            ;input(type "hidden", name "return-from", value ret-from);
+            ;input(type "text", name "title", placeholder "+", autocomplete "off");
+            ;button(type "submit"): +
+          ==
+        ==
+        ;div.hour-half
+          ;*  h2-pills
+          ;form.quick-add(method "POST", action "{base-url}/add-day")
+            ;input(type "hidden", name "start-date", value date-str);
+            ;input(type "hidden", name "start-time", value "{(z-pad hour)}:30");
+            ;input(type "hidden", name "end-date", value date-str);
+            ;input(type "hidden", name "end-time", value "{(z-pad next-hour)}:00");
+            ;input(type "hidden", name "return-date", value date-str);
+            ;input(type "hidden", name "return-from", value ret-from);
+            ;input(type "text", name "title", placeholder "+", autocomplete "off");
+            ;button(type "submit"): +
+          ==
+        ==
+      ==
+    ==
+  $(hour +(hour), rows [row rows])
+::  +render-week-schedule: agenda view for a week (Sun–Sat) grouped by day
+::
+++  render-week-schedule
+  |=  [anchor=@da events=(map @ud event) base-url=tape now=@da]
+  ^-  manx
+  =/  ws    (week-start-da:calendar-date anchor)
+  =/  we    (week-end-da:calendar-date anchor)
+  =/  prev-ws  (sub ws (mul 7 ~d1))
+  =/  next-ws  (add ws (mul 7 ~d1))
+  =/  prev-dt  (yore prev-ws)
+  =/  next-dt  (yore next-ws)
+  =/  prev-url  "{base-url}/schedule/week?date={(ud-to-tape y.prev-dt)}-{(z-pad m.prev-dt)}-{(z-pad d.t.prev-dt)}"
+  =/  next-url  "{base-url}/schedule/week?date={(ud-to-tape y.next-dt)}-{(z-pad m.next-dt)}-{(z-pad d.t.next-dt)}"
+  ::  all events that overlap this week
+  =/  week-events=(list event)
+    %+  sort
+      %+  skim  (turn ~(tap by events) |=([=@ud =event] event))
+      |=(=event &((lth start.event we) (gth end.event ws)))
+    |=([a=event b=event] (lth start.a start.b))
+  ::  build title: "Month D–D, Y" or "Month D – Month D, Y" if crosses month boundary
+  =/  ws-dt   (yore ws)
+  =/  sat-da  (sub we ~d1)
+  =/  sat-dt  (yore sat-da)
+  =/  sun-mname  (trip (month-name:calendar-date m.ws-dt))
+  =/  sat-mname  (trip (month-name:calendar-date m.sat-dt))
+  =/  title-tape=tape
+    ?:  =(m.ws-dt m.sat-dt)
+      "{sun-mname} {(ud-to-tape d.t.ws-dt)}–{(ud-to-tape d.t.sat-dt)}, {(ud-to-tape y.ws-dt)}"
+    "{sun-mname} {(ud-to-tape d.t.ws-dt)} – {sat-mname} {(ud-to-tape d.t.sat-dt)}, {(ud-to-tape y.sat-dt)}"
+  =/  now-dt   (yore now)
+  =/  day-idx=@ud  0
+  =/  groups=(list manx)  ~
+  |-
+  ?:  =(day-idx 7)
+    %+  page-wrapper  "Week: {title-tape}"
+    ;div
+      ;+  (view-toggle "week" base-url y.ws-dt m.ws-dt d.t.ws-dt)
+      ;div.nav
+        ;a(href prev-url): < Prev Week
+        ;span.title: {title-tape}
+        ;a(href next-url): Next Week >
+      ==
+      ;+  ?:  =(~ week-events)
+            ;div.card
+              ;div.empty-state: No events this week
+            ==
+          ;div
+            ;*  (flop groups)
+          ==
+    ==
+  ::  compute this day's bounds
+  =/  this-da   (add ws (mul day-idx ~d1))
+  =/  next-da   (add this-da ~d1)
+  =/  this-dt   (yore this-da)
+  =/  wday      (trip (weekday-name:calendar-date day-idx))
+  =/  mname     (trip (month-name:calendar-date m.this-dt))
+  =/  is-today=?
+    &(=(y.this-dt y.now-dt) =(m.this-dt m.now-dt) =(d.t.this-dt d.t.now-dt))
+  ::  events overlapping this day
+  =/  day-events=(list event)
+    %+  skim  week-events
+    |=(=event &((lth start.event next-da) (gth end.event this-da)))
+  ::  header: highlight today in blue
+  =/  hdr=manx
+    ?:  is-today
+      ;div.schedule-group-header(style "color:#2563eb;font-weight:700;"): {wday}, {mname} {(ud-to-tape d.t.this-dt)}
+    ;div.schedule-group-header: {wday}, {mname} {(ud-to-tape d.t.this-dt)}
+  ::  items: events or a "no events" placeholder, header prepended
+  =/  no-ev=manx
+    ;div(style "padding:6px 0 4px 0;color:#9ca3af;font-size:13px;"): No events
+  =/  ev-items=(list manx)
+    ?:  =(~ day-events)
+      ~[no-ev]
+    %+  turn  day-events
+    |=(=event (render-schedule-item event base-url))
+  =/  day-items=(list manx)  [hdr ev-items]
+  =/  group=manx
+    ;div.schedule-group
+      ;*  day-items
+    ==
+  $(day-idx +(day-idx), groups [group groups])
+::  +render-month-schedule: agenda view for a month grouped by day
+::
+++  render-month-schedule
+  |=  [y=@ud m=@ud events=(map @ud event) base-url=tape now=@da]
+  ^-  manx
+  =/  mname  (trip (month-name:calendar-date m))
+  =/  dim  (days-in-month:calendar-date y m)
+  =/  range-start  (month-start-da:calendar-date y m)
+  =/  range-end  (month-end-da:calendar-date y m)
+  =/  month-events=(list event)
+    %+  sort
+      %+  skim  (turn ~(tap by events) |=([=@ud =event] event))
+      |=(=event &((lth start.event range-end) (gth end.event range-start)))
+    |=([a=event b=event] (lth start.a start.b))
+  ::  prev/next month
+  =/  [py=@ud pm=@ud]  (prev-month:calendar-date y m)
+  =/  [ny=@ud nm=@ud]  (next-month:calendar-date y m)
+  =/  prev-url  "{base-url}/schedule/month?m={(ud-to-tape pm)}&y={(ud-to-tape py)}"
+  =/  next-url  "{base-url}/schedule/month?m={(ud-to-tape nm)}&y={(ud-to-tape ny)}"
+  =/  cur  (yore now)
+  %+  page-wrapper  "Schedule - {mname} {(ud-to-tape y)}"
+  ;div
+    ;+  (view-toggle "month" base-url y m d.t.cur)
+    ;div.nav
+      ;a(href prev-url): < Prev Month
+      ;span.title: {mname} {(ud-to-tape y)}
+      ;a(href next-url): Next Month >
+    ==
+    ;+  ?:  =(~ month-events)
+          ;div.card
+            ;div.empty-state: No events scheduled this month
+          ==
+        ::  group events by day
+        =/  day-idx=@ud  1
+        =/  groups=(list manx)  ~
+        |-
+        ?:  (gth day-idx dim)
+          ;div
+            ;*  (flop groups)
+          ==
+        =/  day-da  (year [[& y] m day-idx 0 0 0 ~])
+        =/  day-end  (year [[& y] m day-idx 23 59 59 ~])
+        =/  day-evs=(list event)
+          %+  skim  month-events
+          |=(=event &((lth start.event day-end) (gth end.event day-da)))
+        ?:  =(~ day-evs)
+          $(day-idx +(day-idx))
+        =/  dow  (day-of-week:calendar-date day-da)
+        =/  wday  (trip (weekday-name:calendar-date dow))
+        =/  group=manx
+          ;div.schedule-group
+            ;div.schedule-group-header: {wday}, {mname} {(ud-to-tape day-idx)}
+            ;*  %+  turn  day-evs
+                |=(=event (render-schedule-item event base-url))
+          ==
+        $(day-idx +(day-idx), groups [group groups])
+  ==
+::  +render-year-schedule: agenda view for a year grouped by month
+::
+++  render-year-schedule
+  |=  [y=@ud events=(map @ud event) base-url=tape now=@da]
+  ^-  manx
+  =/  range-start  (year-start-da:calendar-date y)
+  =/  range-end  (year-end-da:calendar-date y)
+  =/  year-events=(list event)
+    %+  sort
+      %+  skim  (turn ~(tap by events) |=([=@ud =event] event))
+      |=(=event &((lth start.event range-end) (gth end.event range-start)))
+    |=([a=event b=event] (lth start.a start.b))
+  =/  prev-url  "{base-url}/schedule/year?y={(ud-to-tape (dec y))}"
+  =/  next-url  "{base-url}/schedule/year?y={(ud-to-tape +(y))}"
+  =/  cur  (yore now)
+  %+  page-wrapper  "Schedule - {(ud-to-tape y)}"
+  ;div
+    ;+  (view-toggle "year" base-url y m.cur d.t.cur)
+    ;div.nav
+      ;a(href prev-url): < Prev Year
+      ;span.title: {(ud-to-tape y)}
+      ;a(href next-url): Next Year >
+    ==
+    ;+  ?:  =(~ year-events)
+          ;div.card
+            ;div.empty-state: No events scheduled this year
+          ==
+        ::  group events by month
+        =/  mon-idx=@ud  1
+        =/  groups=(list manx)  ~
+        |-
+        ?:  (gth mon-idx 12)
+          ;div
+            ;*  (flop groups)
+          ==
+        =/  mon-start  (month-start-da:calendar-date y mon-idx)
+        =/  mon-end  (month-end-da:calendar-date y mon-idx)
+        =/  mon-evs=(list event)
+          %+  skim  year-events
+          |=(=event &((lth start.event mon-end) (gth end.event mon-start)))
+        ?:  =(~ mon-evs)
+          $(mon-idx +(mon-idx))
+        =/  mname  (trip (month-name:calendar-date mon-idx))
+        =/  group=manx
+          ;div.schedule-group
+            ;div.schedule-group-header: {mname}
+            ;*  %+  turn  mon-evs
+                |=(=event (render-schedule-item event base-url))
+          ==
+        $(mon-idx +(mon-idx), groups [group groups])
   ==
 ::  +render-month-view: render calendar month grid
 ::
@@ -92,6 +513,7 @@
     =/  next-url  "{base-url}?m={(ud-to-tape nm)}&y={(ud-to-tape ny)}"
     %+  page-wrapper  "Calendar - {mname} {(ud-to-tape y)}"
     ;div
+      ;+  (view-toggle "month" base-url y m today-d)
       ;div.nav
         ;a(href prev-url): < Prev
         ;span.title: {mname} {(ud-to-tape y)}

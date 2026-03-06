@@ -111,6 +111,20 @@
         =/  update-card  [%give %fact ~[/updates] %calendar-update !>([%event-added -.res])]
         :_  this(state [%0 +.res])
         (snoc http-cards update-card)
+      ::  POST /add-day - quick add from day view, redirects back to day
+      ::
+          [%add-day ~]
+        =/  title  (fall (find-arg:hc body-args 'title') '')
+        =/  start  (parse-date-time:hc body-args 'start-date' 'start-time')
+        =/  end  (parse-date-time:hc body-args 'end-date' 'end-time')
+        =/  ret-date  (fall (find-arg:hc body-args 'return-date') '')
+        =/  ret-from  (fall (find-arg:hc body-args 'return-from') '')
+        =/  res  (add-event st title start end ~ ~)
+        =/  redir  (crip "{base-url}/schedule/day?date={(trip ret-date)}&from={(trip ret-from)}")
+        =/  http-cards  (give-simple-payload:app:server eyre-id (redirect-303:hc redir))
+        =/  update-card  [%give %fact ~[/updates] %calendar-update !>([%event-added -.res])]
+        :_  this(state [%0 +.res])
+        (snoc http-cards update-card)
       ::  POST /edit/<id>
       ::
           [%edit @ ~]
@@ -230,6 +244,71 @@
     ?~  ev  not-found:gen:server
     %-  manx-response:gen:server
     (render-event-detail:calendar-ui u.ev base-url)
+  ::  GET /schedule/day - day agenda view
+  ::
+      [%schedule %day ~]
+    =/  cur  (yore now.bowl)
+    =/  date-str  (find-arg args 'date')
+    =/  from-hour  (fall (bind (find-arg args 'from') |=(v=@t (rash v dem))) 99)
+    ?~  date-str
+      ::  no date param: use today
+      %-  manx-response:gen:server
+      (render-day-schedule:calendar-ui y.cur m.cur d.t.cur from-hour events.st base-url now.bowl)
+    ::  parse YYYY-MM-DD from date param
+    =/  parts=(list @t)  (split-cord u.date-str '-')
+    =/  dy=@ud
+      ?~  parts  y.cur
+      (fall (rush i.parts dem) y.cur)
+    =/  dm=@ud
+      ?~  parts  m.cur
+      ?~  t.parts  m.cur
+      (fall (rush i.t.parts dem) m.cur)
+    =/  dd=@ud
+      ?~  parts  d.t.cur
+      ?~  t.parts  d.t.cur
+      ?~  t.t.parts  d.t.cur
+      (fall (rush i.t.t.parts dem) d.t.cur)
+    %-  manx-response:gen:server
+    (render-day-schedule:calendar-ui dy dm dd from-hour events.st base-url now.bowl)
+  ::  GET /schedule/week - week agenda view
+  ::
+      [%schedule %week ~]
+    =/  cur  (yore now.bowl)
+    =/  date-str  (find-arg args 'date')
+    =/  anchor=@da
+      ?~  date-str
+        now.bowl
+      =/  parts=(list @t)  (split-cord u.date-str '-')
+      =/  ay=@ud
+        ?~  parts  y.cur
+        (fall (rush i.parts dem) y.cur)
+      =/  am=@ud
+        ?~  parts  m.cur
+        ?~  t.parts  m.cur
+        (fall (rush i.t.parts dem) m.cur)
+      =/  ad=@ud
+        ?~  parts  d.t.cur
+        ?~  t.parts  d.t.cur
+        ?~  t.t.parts  d.t.cur
+        (fall (rush i.t.t.parts dem) d.t.cur)
+      (year [[& ay] am ad 0 0 0 ~])
+    %-  manx-response:gen:server
+    (render-week-schedule:calendar-ui anchor events.st base-url now.bowl)
+  ::  GET /schedule/month - month agenda view
+  ::
+      [%schedule %month ~]
+    =/  cur  (yore now.bowl)
+    =/  y=@ud  (fall (bind (find-arg args 'y') |=(v=@t (rash v dem))) y.cur)
+    =/  m=@ud  (fall (bind (find-arg args 'm') |=(v=@t (rash v dem))) m.cur)
+    %-  manx-response:gen:server
+    (render-month-schedule:calendar-ui y m events.st base-url now.bowl)
+  ::  GET /schedule/year - year agenda view
+  ::
+      [%schedule %year ~]
+    =/  cur  (yore now.bowl)
+    =/  y=@ud  (fall (bind (find-arg args 'y') |=(v=@t (rash v dem))) y.cur)
+    %-  manx-response:gen:server
+    (render-year-schedule:calendar-ui y events.st base-url now.bowl)
   ==
 ::
 ++  redirect-303

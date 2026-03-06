@@ -74,6 +74,18 @@
   ?:  =(m 12)
     [+(y) 1]
   [y +(m)]
+::  +year-start-da: first moment of a year as @da
+::
+++  year-start-da
+  |=  y=@ud
+  ^-  @da
+  (year [[& y] 1 1 0 0 0 ~])
+::  +year-end-da: first moment after a year ends as @da
+::
+++  year-end-da
+  |=  y=@ud
+  ^-  @da
+  (year [[& +(y)] 1 1 0 0 0 ~])
 ::  +month-name: month number -> cord
 ::
 ++  month-name
@@ -82,4 +94,35 @@
   =/  names=(list @t)
     ~['January' 'February' 'March' 'April' 'May' 'June' 'July' 'August' 'September' 'October' 'November' 'December']
   (snag (dec m) names)
+::  +month-name-short: month number -> 3-letter cord
+::
+++  month-name-short
+  |=  m=@ud
+  ^-  @t
+  =/  names=(list @t)
+    ~['Jan' 'Feb' 'Mar' 'Apr' 'May' 'Jun' 'Jul' 'Aug' 'Sep' 'Oct' 'Nov' 'Dec']
+  (snag (dec m) names)
+::  +weekday-name: 0=Sun..6=Sat -> cord
+::
+++  weekday-name
+  |=  d=@ud
+  ^-  @t
+  =/  names=(list @t)
+    ~['Sunday' 'Monday' 'Tuesday' 'Wednesday' 'Thursday' 'Friday' 'Saturday']
+  (snag d names)
+::  +week-start-da: midnight Sunday of the week containing d
+::
+++  week-start-da
+  |=  d=@da
+  ^-  @da
+  =/  dow  (day-of-week d)
+  =/  dt   (yore d)
+  =/  midnight  (year [[& y.dt] m.dt d.t.dt 0 0 0 ~])
+  (sub midnight (mul dow ~d1))
+::  +week-end-da: exclusive end of week (midnight following Sunday)
+::
+++  week-end-da
+  |=  d=@da
+  ^-  @da
+  (add (week-start-da d) (mul 7 ~d1))
 --
